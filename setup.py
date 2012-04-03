@@ -26,5 +26,7 @@ if __name__ == '__main__':
     from numpy.distutils.core import setup
 
     c = configuration(top_path='',
+                      ext_modules=get_extensions(),
+                      cmdclass = {'build_ext': build_ext}
                       ).todict()
     setup(**c)
