@@ -285,7 +285,7 @@ class NaiveGraphNet(Regression):
 class GraphNet(NaiveGraphNet):
 
     """
-    ENet problem. Takes NaiveENet solution
+    GraphNet problem. Takes NaiveGraphNet solution
     and scales coefficients on self.output() by (1 + l2)
     with l1, l2, l3 = self.penalty.
 
@@ -1456,5 +1456,4 @@ def _update_graphSVM_old(np.ndarray[DTYPE_int_t, ndim=1] active,
         db = beta[i] - new
         r += db * X[:,i]
         beta[i] = new    
-
 

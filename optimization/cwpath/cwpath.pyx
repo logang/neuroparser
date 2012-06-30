@@ -12,12 +12,6 @@ DTYPE_int = np.int
 ctypedef np.int_t DTYPE_int_t
 
 
-
-
-
-
-
-
 """
 This module implements large scale 'pathwise coordinate optimization'
 techniques, as described in 

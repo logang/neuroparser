@@ -1,0 +1,22 @@
+# List of to do items for Neuroparser development
+
+# -------------- GUI -------------- #
+
+Include panels for:
+   -- Loading, viewing, and saving data
+   -- Running/Managing analysis
+   -- Viewing coefficients
+   -- Viewing parameters 
+   -- Benchmarking/Synthetic data
+
+# -------------- IO --------------- #
+
+Loading files:
+   -- load NIFTI files
+   -- load NPZ files
+   -- load behavioral variables
+
+# -------------- DISPLAY -------------- #
+
+Coefficient View:
+  -- integrate real-time viewing of coefficients with sliders

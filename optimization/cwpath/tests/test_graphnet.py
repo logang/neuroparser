@@ -1,5 +1,5 @@
 import numpy as np
-from cwpath import cwpath, graphnet, strategy
+from optimization.cwpath import cwpath, graphnet, strategy
 import scipy.optimize
 from nose.tools import *
 import time

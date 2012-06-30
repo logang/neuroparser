@@ -1,0 +1,12 @@
+import commands
+
+# -----------------
+# LOCAL ENVIRONMENT
+# ----------------
+Import('env')
+optimization_env = env.Clone()
+
+#optimization_env.PythonExtension('cwpath/graphnet', ['./graphnet.pyx'])
+
+#env.PythonExtension('./optimization/cwpath/lasso', ['./optimization/cwpath/lasso.pyx'])
+#env.PythonExtension('./optimization/cwpath/regression', ['./optimization/cwpath/regression.pyx'])
