@@ -10,9 +10,5 @@ cwpath_env.PythonExtension('cwpath', ['./cwpath.pyx'])
 cwpath_env.PythonExtension('graphnet', ['./graphnet.pyx'])
 cwpath_env.PythonExtension('regression', ['./regression.pyx'])
 
-#cwpath_env.PythonExtension('cwpath.graphnet', ['./graphnet.pyx'])
-#cwpath_env.PythonExtension('optimization.cwpath.graphnet', ['./graphnet.pyx'])
+cwpath_env.Append(PYTHONPATH='/Users/logang/Documents/Code/python/neuroparser/optimization/cwpath/')
 
-#env.PythonExtension('./optimization/cwpath/lasso', ['./optimization/cwpath/lasso.pyx'])
-
-#cwpath_env.SharedLibrary('graphnet',['./graphnet.os'], LIBPREFIX = '')

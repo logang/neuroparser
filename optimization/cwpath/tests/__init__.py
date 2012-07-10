@@ -1,1 +1,1 @@
-import graphnet, cwpath, regression
+export PYTHONPATH='/Users/logang/Documents/Code/python/neuroparser/optimization/cwpath/'
