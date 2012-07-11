@@ -9,6 +9,6 @@ cwpath_env = env.Clone()
 cwpath_env.PythonExtension('cwpath', ['./cwpath.pyx'])
 cwpath_env.PythonExtension('graphnet', ['./graphnet.pyx'])
 cwpath_env.PythonExtension('regression', ['./regression.pyx'])
+cwpath_env.PythonExtension('lasso', ['./lasso.pyx'])
 
-cwpath_env.Append(PYTHONPATH='/Users/logang/Documents/Code/python/neuroparser/optimization/cwpath/')
 

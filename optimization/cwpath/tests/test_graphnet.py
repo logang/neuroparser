@@ -1,9 +1,16 @@
+# cython functions are not yet seen as packages. import path. 
+import sys
+sys.path.append('/Users/logang/Documents/Code/python/neuroparser/optimization/cwpath')
+
+# import major libraries
 import numpy as np
-from optimization.cwpath import cwpath, graphnet, strategy
 import scipy.optimize
 from nose.tools import *
 import time
-#import testR
+import testR
+
+# local imports
+import cwpath, graphnet, strategy
 
 def setup():
     testR.setup()
@@ -57,8 +64,6 @@ def adj_array_as_list(adj):
         v.append(a[np.greater(a, -1)])
     return v
                         
-
-
 def gen_adj(p):
 
     Afull = np.zeros((p,p),dtype=int)

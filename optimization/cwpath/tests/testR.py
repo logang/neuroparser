@@ -1,9 +1,18 @@
+# cython functions are not yet seen as packages. import path. 
+import sys
+sys.path.append('/Users/logang/Documents/Code/python/neuroparser/optimization/cwpath')
+
+# R imports
 #import rpy2.rpy_classic as rpy
 #rpy.set_default_mode(NO_CONVERSION)
 import rpy2
 from rpy2 import robjects as rpy
+
+# major python libraries
 import numpy as np
-from cwpath import cwpath, lasso
+
+# local imports 
+import cwpath, lasso
 	
 class AlternativeConvergence(lasso.Lasso):
     """
