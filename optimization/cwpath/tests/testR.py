@@ -1,6 +1,8 @@
 # cython functions are not yet seen as packages. import path. 
-import sys
-sys.path.append('/Users/logang/Documents/Code/python/neuroparser/optimization/cwpath')
+import sys, os
+path_to_cython_packages = os.path.abspath('../.')
+print path_to_cython_packages
+sys.path.append(path_to_cython_packages)
 
 # R imports
 #import rpy2.rpy_classic as rpy
@@ -12,9 +14,9 @@ from rpy2 import robjects as rpy
 import numpy as np
 
 # local imports 
-import cwpath, lasso
+import cwpath, graphnet #, lasso
 	
-class AlternativeConvergence(lasso.Lasso):
+class AlternativeConvergence(graphnet.Lasso):
     """
     Use same convergence criterion as in R script
     """

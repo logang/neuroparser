@@ -3,6 +3,10 @@ Strategies for changing active set based on current iteration,
 the current active set and a candidate set of non-zero coefficients.
 """
 import numpy as np
+import scipy.linalg as la
+
+# should we replace this with cython?
+from numpy.core.umath_tests import inner1d
 
 class Strategy:
 
@@ -35,6 +39,22 @@ class Strategy:
         """
         return np.arange(self.p)
 
+    def SAFE(self, lam_max, lam, y, X):
+        """
+        Screen variables using the SAFE rule.
+        """
+        resid_prod = np.fabs( inner1d(X.T,resid) )
+        idx = resid_prod >= lam - la.norm(X[:,i])*la.norm(y)*((lam_max-lam)/lam_max)
+        return np.where(idx)[0]
+
+    def STRONG(self, lam_max, lam, resid, X):
+        """
+        Screen variables using the STRONG rule.
+        """
+        resid_prod = np.fabs( inner1d(X.T,resid) )
+        idx = resid_prod >= 2*lam_max - lam
+        return np.where(idx)[0]
+
 class NStep(Strategy):
 
     __doc__ = Strategy.__doc__    
@@ -59,7 +79,7 @@ class NStepBurnin(Strategy):
     
     def __init__(self, p, nstep=5, burnin=1):
         """
-        Update the active set active set with the candidate
+        Update the active set with the candidate
         if it % self.nstep == 0, unless it==self.burnin, in which
         case also return the candidate.
 

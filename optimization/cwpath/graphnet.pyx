@@ -206,7 +206,6 @@ class ENet(NaiveENet):
 
         return self.beta * (1 + l2), self.r
 
-
 class NaiveGraphNet(Regression):
 
     """

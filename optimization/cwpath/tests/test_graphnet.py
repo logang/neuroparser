@@ -1,6 +1,7 @@
 # cython functions are not yet seen as packages. import path. 
-import sys
-sys.path.append('/Users/logang/Documents/Code/python/neuroparser/optimization/cwpath')
+import sys, os
+path_to_cython_packages = os.path.abspath('../.')
+sys.path.append(path_to_cython_packages)
 
 # import major libraries
 import numpy as np
@@ -22,13 +23,12 @@ def test_all():
     #X2 = np.random.normal(0,1,np.prod(X.shape)).reshape(X.shape)
     #X = np.hstack([X,X2])
     #print X.shape
-    l1vec = [1,10,100]
-    l2vec = [10,20,100]
-    l3vec = [30,50,100]
+    l1vec = [45,40,35]
+    l2vec = [100]
+    l3vec = [100]
 
     deltavec = [1000,10,0.1]
     unitdeltavec = [0.25,0.5,0.75]
-
 
     #l1 = range(1000,0,-10)
     #l1 = 5
@@ -44,28 +44,169 @@ def test_all():
             #test_array(X,Y,l1,l2,tol=cwpathtol)
             #test_unnormalized(X,Y,l1,l2,tol=cwpathtol)
             for l3 in l3vec:
-                #test_graphnet(X,Y,l1,l2,l3,tol=cwpathtol)
-                for delta in deltavec:
-                    test_robust_graphnet(X,Y,l1,l2,l3,delta,tol=cwpathtol)
+                test_graphnet(X,Y,l1,l2,l3,tol=cwpathtol)
+                #for delta in deltavec:
+                #    test_robust_graphnet(X,Y,l1,l2,l3,delta,tol=cwpathtol)
                 #    #test_robust_graphnet_reweight(X,Y,l1,l2,l3,delta,tol=cwpathtol)
                 #for delta in unitdeltavec:
                     #test_HuberSVM(X,Y,l1,l2,l3,delta,tol=cwpathtol/10.)
                     #test_graphsvm(X,Y,l1,l2,l3,delta)
 
-
     print "\n\n Congratulations - nothing exploded!"
 
+def test_graphnet(X,Y,l1=500.,l2=None,l3=None,robust=False,adaptive=False,svm=False,scipy_compare=True,tol=1e-4):
+    tic = time.clock()
+    # Cases set based on parameters and robust/adaptive/svm flags
+    if l2 is not None:
+        if l3 is not None:
+            A, Afull = gen_adj(X.shape[1])
+            if robust:
+                if adaptive:
+                    if svm:
+                        # Huber SVM. This one is a bit specialized, 
+                        # so we call another function
+                        test_HuberSVM(X,Y,l1=l1,l2=l2,l3=l3,delta=delta,scipy_compare=scipy_compare,tol=tol)
+                    else:
+                        # Robust Adaptive Graphnet
+                        print "Robust Adaptive GraphNet with penalties (l1,l2,l3,delta):", l1, l2, l3, delta
+                        l1weights = np.ones(X.shape[1])
+                        # Change l1 from being a multiple of the 1 vector
+                        l1weights[range(4)]=17.
+                        l1weights[-1] = 45.
+                        l1weights[9] = 1.
+                        l = cwpath.CoordWise((X, Y, A), graphnet.RobustGraphNetReweight) # initial_coefs = np.array([77.]*10))
+                        l.problem.assign_penalty(l1=l1,l2=l2,l3=l3,delta=delta,l1weights=l1weights,newl1=l1)
+                else:
+                    # Robust Graphnet
+                    print "Robust GraphNet with penalties (l1, l2, l3, delta)", l1, l2, l3, delta
+                    l = cwpath.CoordWise((X, Y, A), graphnet.RobustGraphNet) #,initial_coefs=np.array([14.]*10))
+                    l.problem.assign_penalty(l1=l1,l2=l2,l3=l3,delta=delta)
+            else:
+                # Graphnet
+                print "Testing GraphNet with penalties (l1,l2,l3):", l1,l2,l3
+                l = cwpath.CoordWise((X, Y, A), graphnet.NaiveGraphNet)
+                l.problem.assign_penalty(l1=l1, l2=l2, l3=l3)
+        else:
+            # Elastic Net
+            print "Testing ENET with penalties (l1,l2):", l1, l2
+            l = cwpath.CoordWise((X, Y), graphnet.NaiveENet) #, initial_coefs = np.array([4.]*10))
+            l.problem.assign_penalty(l1=l1, l2=l2)
+    else:
+        # Lasso
+        print "Testing LASSO with penalty:", l1
+        l = cwpath.CoordWise((X, Y), graphnet.Lasso) #, initial_coefs= np.array([7.]*10))
+        l.problem.assign_penalty(l1=l1)
+
+    # fit and get results
+    l.fit(tol=tol)
+    beta = l.results[0]
+    print "\t---> Fitting GraphNet problem with coordinate descent took:", time.clock()-tic, "seconds."
+
+    # if compare to scipy flag is set,
+    # compare the above result with the same problem 
+    # solved using a built in scipy solver (fmin_powell).
+    if scipy_compare:
+        print "\t---> Fitting with scipy for comparison..."
+        tic = time.clock()
+        if l2 is not None:
+            if l3 is not None:
+                if robust:
+                    if adaptive: 
+                        if svm:
+                            # Covered by earlier call to test_HuberSVM above.
+                            pass
+                        else:
+                            # Robust Adaptive Graphnet
+                            def f(beta):
+                                return huber(Y - np.dot(X, beta)).sum()/2  + l1*np.dot(np.fabs(beta),l1weights) + l2 * np.linalg.norm(beta)**2/2 + l3 * np.dot(beta, np.dot(Afull, beta))/2
+                    else:
+                        # Robust Graphnet
+                        def f(beta):
+                            return huber(Y - np.dot(X, beta)).sum()/2  + np.fabs(beta).sum()*l1 + l2 * np.linalg.norm(beta)**2/2 + l3 * np.dot(beta, np.dot(Afull, beta))/2
+                else:
+                    # Graphnet 
+                    def f(beta):
+                        return np.linalg.norm(Y - np.dot(X, beta))**2/2 + np.fabs(beta).sum()*l1 + l2 * np.linalg.norm(beta)**2/2 + l3 * np.dot(beta, np.dot(Afull, beta))/2
+            else:
+                # Elastic Net
+                def f(beta):
+                    return np.linalg.norm(Y - np.dot(X, beta))**2/2 + np.fabs(beta).sum()*l1 + l2 * np.linalg.norm(beta)**2/2
+        else:
+            # Lasso
+            def f(beta):
+                return np.linalg.norm(Y - np.dot(X, beta))**2/2 + np.fabs(beta).sum()*l1
+    # optimize
+    v = scipy.optimize.fmin_powell(f, np.zeros(X.shape[1]), ftol=1.0e-10, xtol=1.0e-10,maxfun=100000)
+    v = np.asarray(v)
+    print "\t---> Fitting GraphNet with scipy took:", time.clock()-tic, "seconds."
+
+    #print np.round(100*v)/100,'\n', np.round(100*beta)/100
+    assert_true(np.fabs(f(v) - f(beta)) / np.fabs(f(v) + f(beta)) < tol)
+    if np.linalg.norm(v) > 1e-8:
+        assert_true(np.linalg.norm(v - beta) / np.linalg.norm(v) < tol)
+    else:
+        assert_true(np.linalg.norm(beta) < 1e-8)
+
+    print "\t---> Coordinate-wise and Scipy optimization agree!"
+
+def test_HuberSVM(X,Y,l1=500.,l2=200,l3=30.5,delta = 0.5,scipy_compare=True,tol=1e-4):
+    print "Testing HuberSVM GraphNet with penalties (l1,l2,l3,delta):", l1, l2, l3, delta
+    tic = time.clock()
+    Y = 2*np.round(np.random.uniform(0,1,len(Y)))-1
+    A, Afull = gen_adj(X.shape[1])
+        
+    l = cwpath.CoordWise((X, Y, A), graphnet.GraphSVM) #, initial_coefs=10.*np.array(range(11)*1))
+    l.problem.assign_penalty(**{'l1':l1,'l2':l2,'l3':l3,'delta':delta})
+    l.problem.assign_penalty(l1=l1,l2=l2,l3=l3,delta=delta)
+    l.fit(tol=tol)
+    beta = l.results[0]
+    print "\t---> Fitting GraphNet problem with coordinate descent took:", time.clock()-tic, "seconds."
+
+    # if compare to scipy flag is set,
+    # compare the above result with the same problem 
+    # solved using a built in scipy solver (fmin_powell).
+    if scipy_compare:
+        print "\t---> Fitting with scipy for comparison..."
+        tic = time.clock()
+
+        def huber(r):
+            t1 = np.greater(r, delta)
+            t2 = np.greater(r,0)
+            return t1*(r - delta/2) + (1-t1)*t2*(r**2/(2*delta))
+
+        Xp2 = np.hstack([np.ones(X.shape[0])[:,np.newaxis],X])
+
+        def error(beta):
+            r = 1-Y*np.dot(Xp2,beta)
+            return huber(r)
+
+        def f(beta):
+            ind = range(1,len(beta))
+            return error(beta).sum()  + np.fabs(beta[ind]).sum()*l1 + l2 * np.linalg.norm(beta[ind])**2/2 + l3 * np.dot(beta[ind], np.dot(Afull, beta[ind]))/2
+
+        v = scipy.optimize.fmin_powell(f, np.zeros(Xp2.shape[1]), ftol=1.0e-14, xtol=1.0e-14, maxfun=100000)
+        v = np.asarray(v)
+        print "\t---> Fitting GraphNet with scipy took:", time.clock()-tic, "seconds."
+
+        #print np.round(100*v)/100,'\n', np.round(100*beta)/100, '\n', f(beta), f(v)
+
+        if f(beta) > f(v)+1e-10:
+            assert_true(np.fabs(f(v) - f(beta)) / np.fabs(f(v) + f(beta)) < 1.0e-04)
+            if np.linalg.norm(v) > 1e-8:
+                assert_true(np.linalg.norm(v - beta) / np.linalg.norm(v) < 1.0e-04)
+            else:
+                assert_true(np.linalg.norm(beta) < 1e-8)
+
+        print "\t---> Coordinate-wise and Scipy optimization agree!"
 
 def adj_array_as_list(adj):
     # Now create the adjacency list
-
     v = []
     for a in adj:
         v.append(a[np.greater(a, -1)])
     return v
                         
 def gen_adj(p):
-
     Afull = np.zeros((p,p),dtype=int)
     A = - np.ones((p,p),dtype=int)
     counts = np.zeros(p)
@@ -83,7 +224,6 @@ def gen_adj(p):
                         counts[i] += 1
                         counts[j] += 1
     return adj_array_as_list(A), Afull
-                                                                                                                                                                                                                                    
 
 def test_path(X,Y,l1 = 500., l2 = 2, l3=3.5):
 
@@ -93,7 +233,6 @@ def test_path(X,Y,l1 = 500., l2 = 2, l3=3.5):
         Afull[i,a] = -1
         Afull[a,i] = -1
         Afull[i,i] += 2
-
 
     l = cwpath.CoordWise((X, Y, A), graphnet.NaiveGraphNet, initial_coefs = np.array([7.]*10))
     t1 = time.time()
@@ -135,16 +274,26 @@ def test_path(X,Y,l1 = 500., l2 = 2, l3=3.5):
         assert_true(np.linalg.norm(beta) < 1e-8)
     """
 
+def huber(r):
+    r = np.fabs(r)
+    t = np.greater(r, delta)
+    return (1-t)*r**2 + t*(2*delta*r - delta**2)        
 
+def huber_svm(r):
+    t1 = np.greater(r, delta)
+    t2 = np.greater(r,0)
+    return t1*(r - delta/2) + (1-t1)*t2*(r**2/(2*delta))
+
+#-------------------------------------------------------------------------------------------------------------------#
+
+"""
 def test_lasso(X,Y,l1=500.,tol=1e-4):
-
 
     print "LASSO", l1
     l = cwpath.CoordWise((X, Y), graphnet.Lasso, initial_coefs= np.array([7.]*10))
     l.problem.assign_penalty(l1=l1)
     l.fit(tol=tol)
     beta = l.results[0]
-
 
     def f(beta):
         return np.linalg.norm(Y - np.dot(X, beta))**2/2 + np.fabs(beta).sum()*l1
@@ -156,8 +305,6 @@ def test_lasso(X,Y,l1=500.,tol=1e-4):
         assert_true(np.linalg.norm(v - beta) / np.linalg.norm(v) < 1.0e-04)
     else:
         assert_true(np.linalg.norm(beta) < 1e-8)
-
-
 
 def test_enet(X,Y,l1=500., l2=200.,tol=1e-4):
 
@@ -234,32 +381,6 @@ def test_unnormalized(X,Y,l1=500,l2=200,tol=1e-4):
         assert_true(np.linalg.norm(beta) < 1e-8)
 
 
-
-def test_graphnet(X,Y,l1 = 500., l2 = 2, l3=3.5,tol=1e-4):
-
-    print "GraphNet", l1,l2,l3
-    A, Afull = gen_adj(X.shape[1])
-    print A
-    l = cwpath.CoordWise((X, Y, A), graphnet.NaiveGraphNet, initial_coefs = np.array([7.]*10))
-    l.problem.assign_penalty(l1=l1, l2=l2, l3=l3)
-
-    l.fit(tol=tol)
-    beta = l.results[0]
-    
-    def f(beta):
-        return np.linalg.norm(Y - np.dot(X, beta))**2/2 + np.fabs(beta).sum()*l1 + l2 * np.linalg.norm(beta)**2/2 + l3 * np.dot(beta, np.dot(Afull, beta))/2
-    
-    v = scipy.optimize.fmin_powell(f, np.zeros(X.shape[1]), ftol=1.0e-10, xtol=1.0e-10,maxfun=100000)
-    v = np.asarray(v)
-
-    print np.round(100*v)/100,'\n', np.round(100*beta)/100
-    assert_true(np.fabs(f(v) - f(beta)) / np.fabs(f(v) + f(beta)) < 1.0e-04)
-    if np.linalg.norm(v) > 1e-8:
-        assert_true(np.linalg.norm(v - beta) / np.linalg.norm(v) < 1.0e-04)
-    else:
-        assert_true(np.linalg.norm(beta) < 1e-8)
-
-
 def test_robust_graphnet(X,Y,l1 = 5000., l2 = 2, l3=3.5, delta = 1.,tol=1e-4):
 
     print "Robust GraphNet", l1, l2, l3, delta
@@ -290,8 +411,6 @@ def test_robust_graphnet(X,Y,l1 = 5000., l2 = 2, l3=3.5, delta = 1.,tol=1e-4):
             assert_true(np.linalg.norm(v - beta) / np.linalg.norm(v) < 1.0e-04)
         else:
             assert_true(np.linalg.norm(beta) < 1e-8)
-
-
 
 def test_robust_graphnet_reweight(X,Y,l1 = 500., l2 = 2, l3=3.5, delta = 5.,tol=1e-4):
 
@@ -332,51 +451,6 @@ def test_robust_graphnet_reweight(X,Y,l1 = 500., l2 = 2, l3=3.5, delta = 5.,tol=
             assert_true(np.linalg.norm(beta) < 1e-8)
 
 
-
-
-def test_HuberSVM(X,Y,l1 = 500., l2 = 200, l3=30.5, delta = 0.5,tol=1e-4):
-
-    print "HuberSVM", l1, l2, l3, delta
-    Y = 2*np.round(np.random.uniform(0,1,len(Y)))-1
-    A, Afull = gen_adj(X.shape[1])
-        
-    l = cwpath.CoordWise((X, Y, A), graphnet.GraphSVM, initial_coefs=10.*np.array(range(11)*1))
-    l.problem.assign_penalty(**{'l1':l1,'l2':l2,'l3':l3,'delta':delta})
-    l.problem.assign_penalty(l1=l1,l2=l2,l3=l3,delta=delta)
-    l.fit(tol=tol)
-    beta = l.results[0]
-    
-    def huber(r):
-        t1 = np.greater(r, delta)
-        t2 = np.greater(r,0)
-        return t1*(r - delta/2) + (1-t1)*t2*(r**2/(2*delta))
-    
-    Xp2 = np.hstack([np.ones(X.shape[0])[:,np.newaxis],X])
-    
-    def error(beta):
-        r = 1-Y*np.dot(Xp2,beta)
-        return huber(r)
-    
-    def f(beta):
-        ind = range(1,len(beta))
-        return error(beta).sum()  + np.fabs(beta[ind]).sum()*l1 + l2 * np.linalg.norm(beta[ind])**2/2 + l3 * np.dot(beta[ind], np.dot(Afull, beta[ind]))/2
-    
-    
-    v = scipy.optimize.fmin_powell(f, np.zeros(Xp2.shape[1]), ftol=1.0e-14, xtol=1.0e-14, maxfun=100000)
-    v = np.asarray(v)
-    
-    print np.round(100*v)/100,'\n', np.round(100*beta)/100, '\n', f(beta), f(v)
-
-    if f(beta) > f(v)+1e-10:
-        assert_true(np.fabs(f(v) - f(beta)) / np.fabs(f(v) + f(beta)) < 1.0e-04)
-        if np.linalg.norm(v) > 1e-8:
-            assert_true(np.linalg.norm(v - beta) / np.linalg.norm(v) < 1.0e-04)
-        else:
-            assert_true(np.linalg.norm(beta) < 1e-8)
-
-
-
-"""
 def test_graphsvm(X,Y,l1 = 500., l2 = 200, l3=30.5, delta = 0.5):
 
     #testR.setup()

@@ -9,7 +9,7 @@ env.Tool("cython")
 env.Append(PYEXTINCPATH=[numpy.get_include()])
 
 # Override location of Cython 
-env.Replace(CYTHON="python /Library/Frameworks/EPD64.framework/Versions/7.0/lib/python2.7/site-packages/cython.py")
+#env.Replace(CYTHON="python /Library/Frameworks/EPD64.framework/Versions/7.0/lib/python2.7/site-packages/cython.py")
 
 # Specify extensions to be compiled
 #env.PythonExtension('optimization.cwpath.cwpath', ['./optimization/cwpath/cwpath.pyx'])
