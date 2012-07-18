@@ -37,7 +37,6 @@ class Lasso(Regression):
         self.penalty = self.default_penalty()
         self.set_coefficients(self.initial_coefs)
 
-
     def set_coefficients(self, coefs):
         if coefs is not None:
             self.beta = coefs	
@@ -52,7 +51,6 @@ class Lasso(Regression):
         return self.beta.shape[0]
     total_coefs = property(get_total_coefs)
 
-
     def default_penalty(self):
         """
         Default penalty for Lasso: a single
@@ -61,8 +59,6 @@ class Lasso(Regression):
         #c = np.fabs(np.dot(self.X.T, self.Y)).max()
         return np.zeros(1, np.dtype([(l, np.float) for l in ['l1']]))
         
-
-
     def update(self, active, nonzero, permute=False):
         """
         Update coefficients in active set, returning
@@ -92,7 +88,6 @@ class LassoArray(Lasso):
 
     as a function of beta.
     """
-
     name = 'lassoArray'
 
     def default_penalty(self):
@@ -106,7 +101,6 @@ class LassoArray(Lasso):
         #return np.zeros((), np.dtype([(l, np.float) for l in ['l1']]))
         d = np.dtype([('l1', '(%d,)f8' % self.X.shape[1])])
         return np.zeros((),d)
-
 
     def update(self, active, nonzero, permute=False):
 
@@ -160,9 +154,7 @@ class NaiveENet(Lasso):
                          self._Xssq)
         return v
 
-
 class ENet(NaiveENet):
-
     """
     ENet problem. Takes NaiveENet solution
     and scales coefficients on self.output() by (1 + l2)
@@ -182,9 +174,7 @@ class ENet(NaiveENet):
 
     NOTE: self.beta corresponds to the NaiveENet solution, not the
           ENet solution.
-
     """
-
     name = 'enet'
 
     def output(self):
@@ -203,11 +193,9 @@ class ENet(NaiveENet):
 
         """
         l2 = self.penalty['l2']
-
         return self.beta * (1 + l2), self.r
 
 class NaiveGraphNet(Regression):
-
     """
     The Naive Laplace problem with three penalty parameters
     l1, l2 and l3 minimizes
@@ -219,9 +207,7 @@ class NaiveGraphNet(Regression):
      as a function of beta,
      where D = diag(N_1, ..., N_p) where N_i is the number
      of neighbors of coefficient i, and A_{ij} = 1(j is i's neighbor)
-
     """
- 
     name = "NaiveGraphNet"
 
     def __init__(self, data, initial_coefs=None):
@@ -235,7 +221,6 @@ class NaiveGraphNet(Regression):
         """
         Generate initial tuple of arguments for update.
         """
-
         self._Xssq = np.sum(self.X**2, axis=0)
         self.penalty = self.default_penalty()
         self.nadj = _create_nadj(self.adj)
@@ -254,7 +239,6 @@ class NaiveGraphNet(Regression):
     def get_total_coefs(self):
         return self.beta.shape[0]
     total_coefs = property(get_total_coefs)
-
 
     def default_penalty(self):
         """
@@ -282,14 +266,11 @@ class NaiveGraphNet(Regression):
 			     self.nadj)
                        
 class GraphNet(NaiveGraphNet):
-
     """
     GraphNet problem. Takes NaiveGraphNet solution
     and scales coefficients on self.output() by (1 + l2)
     with l1, l2, l3 = self.penalty.
-
     """
-
     name = "GraphNet"
 
     def output(self):
@@ -303,7 +284,6 @@ class GraphNet(NaiveGraphNet):
         return self.beta * (1 + l2), self.r
 
 class RobustGraphNet(Regression):
-
     """
     The Naive Laplace problem with three penalty parameters
     l1, l2 and l3 minimizes
@@ -314,11 +294,8 @@ class RobustGraphNet(Regression):
      as a function of beta,
      where D = diag(N_1, ..., N_p) where N_i is the number
      of neighbors of coefficient i, and A_{ij} = 1(j is i's neighbor)
-
     """
-
     name = 'RobustGraphNet'
-
 
     def __init__(self, data, initial_coefs=None):
         
@@ -327,7 +304,6 @@ class RobustGraphNet(Regression):
         _, _, self.adj = data
         Regression.__init__(self, data[:2], initial_coefs)
         
-
     def initialize(self):
         """
         Generate initial tuple of arguments for update.
@@ -391,7 +367,6 @@ class RobustGraphNet(Regression):
 			     self.nadj)
 
 class RobustGraphNetReweight(Regression):
-
     """
     The Naive Laplace problem with three penalty parameters
     l1, l2 and l3 minimizes
@@ -402,7 +377,6 @@ class RobustGraphNetReweight(Regression):
      as a function of beta,
      where D = diag(N_1, ..., N_p) where N_i is the number
      of neighbors of coefficient i, and A_{ij} = 1(j is i's neighbor)
-
     """
 
     name = 'RobustGraphNetReweight'
@@ -443,7 +417,6 @@ class RobustGraphNetReweight(Regression):
                       ('newl1', np.float)])
         return np.zeros((), d)
 
-
     def set_coefficients(self, coefs):
         if coefs is not None:
             self.beta[range(self.X.shape[1]-self.X.shape[0])] = coefs
@@ -455,11 +428,9 @@ class RobustGraphNetReweight(Regression):
     
     coefficients = property(get_coefficients, set_coefficients)	
 
-
     def get_total_coefs(self):
         return self.beta.shape[0]
     total_coefs = property(get_total_coefs)
-
 
     def trim_beta(self):
         #Remove extra coefficients from infimal convolution
@@ -487,10 +458,7 @@ class RobustGraphNetReweight(Regression):
 			     self.adj, 
 			     self.nadj)
 
-
-
 class GraphSVMRegression(Regression):
-
     """
     The Naive Laplace problem with three penalty parameters
     l1, l2 and l3 minimizes
@@ -501,9 +469,7 @@ class GraphSVMRegression(Regression):
      as a function of beta,
      where D = diag(N_1, ..., N_p) where N_i is the number
      of neighbors of coefficient i, and A_{ij} = 1(j is i's neighbor)
-
     """
-
     name = 'GraphSVMRegression'
 
     def __init__(self, data, initial_coefs=None):
@@ -641,7 +607,6 @@ class GraphSVM(Regression):
                       ('delta', np.float)])
         return np.zeros((), d)
 
-
     def set_coefficients(self, coefs):
         if coefs is not None:
             vec = coefs
@@ -773,7 +738,6 @@ def _update_graph_svm(np.ndarray[DTYPE_int_t, ndim=1] active,
         else:
             r[i-ind_cut-1] += db
         beta[i] = new
-
 
 def _update_graph_svm_old(np.ndarray[DTYPE_int_t, ndim=1] active,
                       penalty,

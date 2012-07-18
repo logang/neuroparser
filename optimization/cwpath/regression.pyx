@@ -11,8 +11,6 @@ ctypedef np.float_t DTYPE_float_t
 DTYPE_int = np.int
 ctypedef np.int_t DTYPE_int_t
 
-
-
 """
 Functions specific to regression problems.
 stop: convergence criterion based on residuals.
@@ -189,14 +187,14 @@ class Regression(object):
         """
         Abstract method for assigning penalty parameters.
         """
-
         if path_key is None:
             path_length = 1
         else:
             path_length = len(params[path_key])
         penalty_list = []
         for i in range(path_length):
-            penalty = self.penalty.copy()
+#            penalty = self.penalty.copy()
+            penalty = dict()
             for key in params:
                 if key==path_key:
                     penalty[key] = params[key][i]

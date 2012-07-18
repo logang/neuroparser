@@ -67,7 +67,7 @@ class CoordWise(object):
         self.problem = problemtype(data,initial_coefs)
         self.strategy = strategy or self.problem.default_strategy()
         self.debug = debug
-        #self.initial_coefs = initial_coefs
+#        self.initial_coefs = initial_coefs
 #        self.screen_type = "STRONG"
         self.screen_type = "all"
         self.KKT_checking_ON = False
@@ -106,7 +106,7 @@ class CoordWise(object):
             print "B", self.problem.coefficients, np.std(self.problem.coefficients), np.max(self.problem.coefficients)
 
 	# keep copy of penalty around
-        penalty = self.problem.penalty.copy()
+        penalty = self.problem.penalty #.copy()
 
         if penalty is not None:
             self.problem.penalty = penalty
@@ -128,16 +128,6 @@ class CoordWise(object):
 	# declare path length
         cdef long path_length = len(penalties)
 
-#	# if not refitting	
-#        if not refit:
-#            if initial is not None:
-#                strategy, self.strategy = self.strategy, initial
-#
-#            if active is None:
-#                self.active = self.problem.default_active()
-#            else:
-#                self.active = active
-
 	# ---- main loop over penalties ---- #
         # main fitting loop for a particular set of penalites
         # and eligible set
@@ -155,6 +145,7 @@ class CoordWise(object):
         results = []
         cdef long i
         cdef float old_tol = tol
+        cdef float alpha = 1.0
 
 	# loop over penalty path
         for i in range(path_length):
@@ -170,7 +161,6 @@ class CoordWise(object):
 
             # set starting active set as eligible set
             if i == 0:
-                alpha = 1.0
                 if self.KKT_checking_ON:
                     self.eligible = []
                     while len(self.eligible) < 1:
@@ -179,18 +169,15 @@ class CoordWise(object):
                         print alpha
                     self.active = self.eligible.copy()
                 else:
-
-#                    self.lam_start = self.lam_max.copy()
-#                    self.active = []
-#                    while len(self.active) < 1:
-#                        self.lam_start *= 0.95
-#                        self.problem.penalty['l1'] = self.lam_start
-
-                    print "Initial pass through all coefficients..."
-                    self.active = self.update( np.array(range(self.data[0].shape[1])) )
-                    print "Done with initial pass."
+                    if initial is None:
+                        print "\t---> Initial pass through all coefficients..."
+                        self.active = self.update( np.array(range(self.data[0].shape[1])) )
+                        print "\t---> Done with initial pass."
+                    else:
+                        print "\t---> Setting active set to last solution in path."
+                        self.active = initial
             else:
-                print "----------NEXT PATH VALUE------------> ", i
+#                print "\t---> Path index", i
                 if self.KKT_checking_ON:
                     self.eligible = self._get_eligible_set(penalties[i-1], penalties[i]['l1'], self.screen_type, self.problem.penalty)
                     self.active = self.eligible.copy()
@@ -215,7 +202,7 @@ class CoordWise(object):
 		# on this and the previous iteration.
                 finished, worst = self.problem.stop(old,tol=tol,return_worst=True)
                 if finished:
-                    print "Active set", self.active, "converged."
+                    print "\t---> Active set of size", len(self.active), "converged."
  
                 # If active set has converged, check KKT conditions for eligible set for SAFE/STRONG.
                 # If there are no violations on the eligible set, run KKT on all variables. If there
@@ -261,7 +248,7 @@ class CoordWise(object):
                     break
 
 	    # collect results
-            results.append(self.current)
+            results.append(self.current[0])
 
         self.problem.penalty = penalty
         return results
