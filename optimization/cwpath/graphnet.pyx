@@ -1030,12 +1030,13 @@ def _compute_Lbeta(list adj,
 
     cdef double quad_term = nadj[k]
     cdef double linear_term = 0
-    cdef np.ndarray[DTYPE_int_t, ndim=1] row
+#    cdef np.ndarray[DTYPE_int_t, ndim=1] row
+    cdef list row
     cdef int i
     
-
     row = adj[k]
-    for i in range(row.shape[0]):
+#    for i in range(row.shape[0]):
+    for i in range(len(row)):
         linear_term += beta[row[i]]
 
     return -2*linear_term, quad_term

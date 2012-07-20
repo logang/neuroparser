@@ -53,7 +53,7 @@ class CoordWise(object):
     -------
 	-- data: a tuple (X,Y,G), where X are the independent regression variables ("inputs", "features"), 
 	   and Y the dependent variable ("output", "target"). G is an optional sparse graph (such as a graph Laplacian) 
-	   used in the regularized regression. 
+	   used in the regularized regression, and represented as a list of lists of indices of adjacent voxels.  
 	-- problemtype: a problem object, such as graphnet.GraphNet, that takes data and and optional initial set of coefficients.
 	-- strategy: s
 	-- penalty: A single set of penalty values for the penalized regression problem, or a list of penalties if 
@@ -142,7 +142,8 @@ class CoordWise(object):
         #     Otherwise, add violations to active set and repeat (2)-(4).
 
 	# initialize
-        results = []
+        coefficients = []
+        residuals = []
         cdef long i
         cdef float old_tol = tol
         cdef float alpha = 1.0
@@ -248,10 +249,11 @@ class CoordWise(object):
                     break
 
 	    # collect results
-            results.append(self.current[0])
+            coefficients.append(self.current[0])
+            residuals.append(self.current[1])
 
         self.problem.penalty = penalty
-        return results
+        return coefficients, residuals
 
     def check_KKT(self, KKT_type="all", conv_eps=0.1):
         if KKT_type == "all":

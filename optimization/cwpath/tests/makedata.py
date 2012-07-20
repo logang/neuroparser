@@ -1,9 +1,9 @@
 import numpy as np
 import scipy.signal as signal
+import pylab as pl
 
-# Basic data                                                                                                                                                                                           
 def basic_data(n,p,SNR=1.):
-    # input signal and noisy signal                                                                                                                                                                    
+    # input signal and noisy signal
     Xsig = np.random.randn(n,p)
     Xsig -= np.mean(Xsig, axis=0)
     Xsig /= np.std(Xsig, axis=0)
@@ -12,33 +12,38 @@ def basic_data(n,p,SNR=1.):
     X -= np.mean(X, axis=0)
     X /= np.std(X, axis=0)
 
-    # coefficients                                                                                                                                                                                     
+    # coefficients
     coefs = np.zeros((p,))
     coefs[0:5] = 5.
 
-    # output                                                                                                                                                                                           
+    # output
     y = np.dot(Xsig, coefs)
     y -= np.mean(y)
     y /= np.std(y)
 
     return X,y
 
-def spatial_data(n=100, im_side=100, SNR=1., outlier_frac=0.1):
+def spatial_data(n=1000, im_side=100, SNR=10., outlier_frac=0.05, thresh=0.1):
     # input signal image and noise image, p must have a square root.
     pos_im = smoothed_point_process_2D( 0.001, im_side, im_side, 20 )
     neg_im = smoothed_point_process_2D( 0.001, im_side, im_side, 20 )
+    im = pos_im - neg_im
+    im[np.fabs(im) < thresh*np.max(np.fabs(im))] = 0
     side = pos_im.shape[0]
     p = side**2
     y = []
     for i in xrange(n):
-        y.append(np.random.uniform())
+#        y.append(np.random.uniform())
+        coin = np.random.binomial(1,0.5)
+        y.append(float(coin))
+
         if i==0:
-            Xsig = ((1-y[i])*pos_im.flatten() + y[i]*neg_im.flatten()).reshape((1,p))
-            Xnoise = ((1-outlier_frac)*np.random.normal(0.0,1.0,size=p) + outlier_frac*np.random.laplace(0.0,5.0,size=p)).reshape((1,p))
+            Xsig = (y[i]*im.flatten('F') + np.zeros(im.shape).flatten('F')).reshape((1,p))
+            Xnoise = ((1-outlier_frac)*np.random.normal(0.0,1.0,size=p) + outlier_frac*np.random.laplace(0.0,50.0,size=p)).reshape((1,p))
         else:
-            sig = ((1-y[i])*pos_im.flatten() + y[i]*neg_im.flatten()).reshape((1,p))
+            sig = (y[i]*im.flatten('F') + np.zeros(im.shape).flatten('F')).reshape((1,p))
             Xsig = np.vstack((Xsig, sig))
-            noise = ((1-outlier_frac)*np.random.normal(0.0,1.0,size=p) + outlier_frac*np.random.laplace(0.0,5.0,size=p)).reshape((1,p))
+            noise = ((1-outlier_frac)*np.random.normal(0.0,1.0,size=p) + outlier_frac*np.random.laplace(0.0,50.0,size=p)).reshape((1,p))
             Xnoise = np.vstack((Xnoise, noise))
 
     # standardize
@@ -51,7 +56,7 @@ def spatial_data(n=100, im_side=100, SNR=1., outlier_frac=0.1):
     y -= np.mean(y)
     y /= np.std(y)
 
-    return X,y,pos_im,neg_im,outlier_frac    
+    return X,y,im,outlier_frac    
 
 def gauss_kern( size, sizey = None ):
     """ Returns a normalized 2D gauss kernel array for convolutions """
@@ -102,24 +107,16 @@ def smoothed_point_process_2D(eta=None, x=None, y=None, blur_width=None):
     return gauss_blur( im, blur_width )
 
 if __name__ == '__main__':
+    spatial_test = False
+    basic_test = False
 
-    X,Y,pos_sig,neg_sig,outlier_frac = spatial_data()
-    np.savez("Data",X=X,Y=Y,pos_sig=pos_sig, neg_sig=neg_sig, outlier_frac=outlier_frac)
+    if spatial_test:
+        # make 1000 points for training, 1000 for validation, and 1000 for test
+        X,Y,sig_im,outlier_frac = spatial_data(n=3000)
+        np.savez("Data",X=X,Y=Y,sig_im=sig_im, outlier_frac=outlier_frac)
+        pl.imsave("sig.png",sig_im)
 
-#    X,y = basic_data(50,100,SNR=100)
-#    plot = False
-
-    # if plot:
-    #     import pylab as pl
-    #     pl.subplot(411)
-    #     pl.scatter(X[:,0],y)
-    #     pl.subplot(412)
-    #     pl.scatter(X[:,1],y)
-    #     pl.subplot(413)
-    #     pl.scatter(X[:,2],y)
-    #     pl.subplot(414)
-    #     pl.scatter(X[:,3],y)
-    #     pl.show()
-
-    #np.save('X',X)
-    #np.save('Y',y)
+    if basic_test:
+        X,y = basic_data(50,100,SNR=100)
+        np.save('X',X)
+        np.save('Y',y)
