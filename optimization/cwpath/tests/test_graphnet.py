@@ -35,7 +35,7 @@ def setup():
 #------------------------------------------------------------------------------------------------------#
 # Run all GraphNet tests
 
-def test_all(num_l1_steps=100,test_imap=True):
+def train_all(num_l1_steps=100,test_imap=False):
     # get training data and constants
     Data = np.load("Data.npz")
     X = Data['X'][0:1000,:]
@@ -45,19 +45,19 @@ def test_all(num_l1_steps=100,test_imap=True):
     cwpathtol = 1e-6
     
     # penalty grid values
-    l1vec = np.linspace(0.95*lam_max, 0.2*lam_max, num=num_l1_steps).tolist()
+    l1vec = np.linspace(0.95*lam_max, 0.0001*lam_max, num=num_l1_steps).tolist()
 
-    # test grid
-    l2vec = [0.0, 1.0, 1e6]
-    l3vec = [0.0, 100, 1e6]
-    deltavec = [0.0, 0.25, 1]
-    svmdeltavec = [0.0, 0.1, 1]
+    # # test grid
+    l2vec = [0.0, 1e6]
+    l3vec = [1e6, 1e12] # [0.0, 100, 1e6]
+    deltavec = [-999.0, 0.1, 0.2, 0.3, 0.5, 1.0, 1e10] #, 0.1, 0.5, 1., 1e10]
+    svmdeltavec = [-999.0] #, 1]
 
-    # # big grid
-    # l2vec = [0.0, 1.0, 10, 100, 1000, 10000, 100000, 1000000]
-    # l3vec = [0.0, 1.0, 10, 100, 1000, 10000, 100000, 1000000]
-    # deltavec = [0.0, 0.1, 0.25, 0.5, 0.75, 1.0, 20, 100]
-    # svmdeltavec = [0.0, 0.1, 0.25, 0.5, 0.75, 1.0, 20, 100]
+    # big grid
+    # l2vec = [0.0, 1.0, 10, 100, 1000, 1e4, 1e6, 1e8]
+    # l3vec = [0.0, 1.0, 10, 100, 1000, 1e4, 1e6, 1e8]
+    # deltavec = [-999.0, 0.25, 0.5, 1.0, 10, 100]
+    # svmdeltavec = [-999.0, 0.25, 0.5, 1.0, 10, 100]
 
     # construct parameter grid
     penalties = []
@@ -75,12 +75,12 @@ def test_all(num_l1_steps=100,test_imap=True):
                      t ) for t in range( len(penalties) ) ] )
     # test imap
     if test_imap:
-        in_tuple = (X,Y,G,(1,1000000,1,0.0),10,lam_max,80)
+        in_tuple = (X,Y,G,(100,1e10,-999.0,-999.0),500,lam_max,80)
         out_tuple = _graphnet_imap( in_tuple )
         results = out_tuple[3]
-        coefs = results[0][9]
+        coefs = results[0][499]
         pl.imsave('imtest.png',coefs.reshape((60,60),order='F'))
-        1/0
+        #1/0
 
     # run problems in parallel with imap
     pool = Pool()
@@ -93,14 +93,64 @@ def test_all(num_l1_steps=100,test_imap=True):
             outfile.create_group(r[0]) # group by problem type
         if str(r[1]) not in outfile[r[0]].keys():
             outfile[r[0]].create_group(str(r[1])) # group by penalty tuple
-#        print "------------------------>",r[0], r[1], r[2]
         outfile[r[0]][str(r[1])]['params'] = np.array(r[1])
         outfile[r[0]][str(r[1])]['l1vec'] = np.array(r[2])
         outfile[r[0]][str(r[1])]['coefficients'] = np.array(r[3][0])
         outfile[r[0]][str(r[1])]['residuals'] = np.array(r[3][1])
+        print "Mean and median residuals:", np.mean(r[3][1]), np.median(r[3][1])
+    # TODO: save parameter grid to hdf5 file
     outfile.close()
-
+    
     print "\n\n Congratulations - nothing exploded!"
+
+def validate_all(h5file):
+    # get validation data
+    Data = np.load("Data.npz")
+    X = Data['X'][1000:2000,:]
+    Y = Data['Y'][1000:2000]
+    y = Y.copy()
+    y[Y>0] = 1.0
+    y[Y<=0] = -1.0
+    y.shape = (1000,1)
+    
+    # # big grid
+    # l1_len = 100
+    # l2vec = [0.0, 1.0, 10, 100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8]
+    # l3vec = [0.0, 1.0, 10, 100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8]
+    # deltavec = [0.0, 0.1, 0.25, 0.5, 0.75, 1.0, 2, 10, 100]
+    # svmdeltavec = [0.0, 0.1, 0.25, 0.5, 0.75, 1.0, 2, 10, 100]
+
+    # test grid
+    l2vec = [0.0, 1e6]
+    l3vec = [0.0, 1e6]
+    deltavec = [0.0, 0.01, 0.04, 1]
+    svmdeltavec = [0.0, 0.4, 1]
+    
+    rate_arr_dims = (l1_len, len(l2vec), len(l3vec), len(deltavec), len(svmdeltavec))
+
+    fits = h5py.File(h5file)
+    for model in fits.keys():
+        current_model = fits[model]
+        rate_arr = np.zeros(rate_arr_dims)
+        for params in current_model.keys():
+            print model, params
+            current_fit = current_model[params]
+            coefs = np.array(current_fit['coefficients']).T
+            params = np.array(current_fit['params'])
+            if model == 'HuberSVMGraphNet':
+                coefs = coefs[1::,:]
+            preds = np.dot(X,coefs)
+            preds[preds>0] = 1.0
+            preds[preds<=0] = -1.0
+            errs = y-preds != 0.0
+            err_rates = np.sum(errs,axis=0)/1000.0
+            #1/0
+            fits[model+'/'+str(tuple(params.tolist()))+'/'+'err_rates'] = err_rates
+            print '\t---> Best rate:', 1.-np.min(err_rates)
+            rate_arr[:,np.where(params[0]==l2vec)[0][0],np.where(params[1]==l3vec)[0][0],np.where(params[2]==deltavec)[0][0],np.where(params[3]==svmdeltavec)[0][0]] = err_rates
+        fits[model+'/'+'err_rate_array'] = rate_arr
+    fits.close()
+    print "Error rates on validation data have been added to file."
 
 #------------------------------------------------------------------------------------------------------#
 # Wrapper for running GraphNet problems using multiprocessing
@@ -133,11 +183,11 @@ def _graphnet_imap( in_tuple ):
 #------------------------------------------------------------------------------------------------------#
 # Main Graphnet problem testing function
 
-def test_graphnet(X,Y,G=None,l1=500.,l2=0.0,l3=0.0,delta=0.0,svmdelta=0.0,initial=None,adaptive=False,svm=False,scipy_compare=True,tol=1e-4):
+def test_graphnet(X,Y,G=None,l1=500.,l2=-999.0,l3=-999.0,delta=-999.0,svmdelta=-999.0,initial=None,adaptive=False,svm=False,scipy_compare=True,tol=1e-5):
     tic = time.clock()
     # Cases set based on parameters and robust/adaptive/svm flags
-    if l2 != 0.0 or l3 != 0.0 or delta != 0.0 or svmdelta != 0.0:
-        if l3 != 0.0 or delta != 0.0 or svmdelta != 0.0:
+    if l2 != -999.0 or l3 != -999.0 or delta != -999.0 or svmdelta != -999.0:
+        if l3 != -999.0 or delta != -999.0 or svmdelta != -999.0:
             if G is None:
                 nx = 60
                 ny = 60
@@ -145,8 +195,8 @@ def test_graphnet(X,Y,G=None,l1=500.,l2=0.0,l3=0.0,delta=0.0,svmdelta=0.0,initia
 #                A, Afull = gen_adj(X.shape[1])
             else:
                 A = G.copy()
-            if delta != 0.0:
-                if svmdelta != 0.0:                    
+            if delta != -999.0:
+                if svmdelta != -999.0:                    
                     print "-------------------------------------------HUBER SVM---------------------------------------------------"
                     problemtype = "HuberSVMGraphNet"
                     problemkey = "HuberSVMGraphNet"
@@ -203,11 +253,11 @@ def test_graphnet(X,Y,G=None,l1=500.,l2=0.0,l3=0.0,delta=0.0,svmdelta=0.0,initia
         tic = time.clock()
         l1 = l1[-1] # choose only last l1 value
         beta = coefficients[-1] # coordinate-wise coefficients
-        if l2 != 0.0 or l3 != 0.0 or delta != 0.0 or svmdelta != 0.0:
-            if l3 != 0.0 or delta != 0.0 or svmdelta != 0.0:
-                if delta != 0.0:
+        if l2 != -999.0 or l3 != -999.0 or delta != -999.0 or svmdelta != -999.0:
+            if l3 != -999.0 or delta != -999.0 or svmdelta != -999.0:
+                if delta != -999.0:
                     if adaptive: 
-                        if svmdelta != 0.0:
+                        if svmdelta != -999.0:
                             # HuberSVM Graphnet
                             Xp2 = np.hstack([np.ones(X.shape[0])[:,np.newaxis],X])
                             def f(beta):

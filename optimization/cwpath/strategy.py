@@ -21,7 +21,7 @@ class Strategy:
     """
 
     max_greedyit = np.inf
-    max_fitit = np.inf
+    max_fitit = 1e4
 
     def __init__(self, p):
         """

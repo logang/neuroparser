@@ -25,8 +25,8 @@ def basic_data(n,p,SNR=1.):
 
 def spatial_data(n=1000, im_side=100, SNR=10., outlier_frac=0.05, thresh=0.1):
     # input signal image and noise image, p must have a square root.
-    pos_im = smoothed_point_process_2D( 0.001, im_side, im_side, 20 )
-    neg_im = smoothed_point_process_2D( 0.001, im_side, im_side, 20 )
+    pos_im = smoothed_point_process_2D( 0.0009, im_side, im_side, 20 )
+    neg_im = smoothed_point_process_2D( 0.0009, im_side, im_side, 20 )
     im = pos_im - neg_im
     im[np.fabs(im) < thresh*np.max(np.fabs(im))] = 0
     side = pos_im.shape[0]
@@ -35,15 +35,24 @@ def spatial_data(n=1000, im_side=100, SNR=10., outlier_frac=0.05, thresh=0.1):
     for i in xrange(n):
 #        y.append(np.random.uniform())
         coin = np.random.binomial(1,0.5)
+        outlier_coin = np.random.binomial(1,outlier_frac)
         y.append(float(coin))
 
         if i==0:
             Xsig = (y[i]*im.flatten('F') + np.zeros(im.shape).flatten('F')).reshape((1,p))
-            Xnoise = ((1-outlier_frac)*np.random.normal(0.0,1.0,size=p) + outlier_frac*np.random.laplace(0.0,50.0,size=p)).reshape((1,p))
+            Xnoise = np.random.normal(0.0,1.0,size=p).reshape((1,p))
+            outlier_sign = 1
+            if outlier_coin:
+                print "outlier!"
+                Xnoise += np.random.laplace(0.0,10.0,size=p).reshape((1,p))
         else:
             sig = (y[i]*im.flatten('F') + np.zeros(im.shape).flatten('F')).reshape((1,p))
             Xsig = np.vstack((Xsig, sig))
-            noise = ((1-outlier_frac)*np.random.normal(0.0,1.0,size=p) + outlier_frac*np.random.laplace(0.0,50.0,size=p)).reshape((1,p))
+            noise = np.random.normal(0.0,1.0,size=p).reshape((1,p))
+            if outlier_coin:
+                print "outlier!"
+                outlier_sign *= -1
+                noise += np.random.laplace(0.0,10.0,size=p).reshape((1,p))
             Xnoise = np.vstack((Xnoise, noise))
 
     # standardize
@@ -107,7 +116,7 @@ def smoothed_point_process_2D(eta=None, x=None, y=None, blur_width=None):
     return gauss_blur( im, blur_width )
 
 if __name__ == '__main__':
-    spatial_test = False
+    spatial_test = True
     basic_test = False
 
     if spatial_test:

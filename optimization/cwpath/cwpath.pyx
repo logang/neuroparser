@@ -71,7 +71,7 @@ class CoordWise(object):
 #        self.screen_type = "STRONG"
         self.screen_type = "all"
         self.KKT_checking_ON = False
-	
+
    # ---- Main update and fitting methods ---- #
 
     def update(self, active=None, permute=False):
@@ -95,7 +95,7 @@ class CoordWise(object):
         self.problem.update(active.astype(np.int), nonzero, permute=permute)
         return np.asarray(nonzero)
 
-    def fit(self, penalty=None, active=None, initial=None, tol=1e-6, repeat_update=5, refit=False, debug=False):
+    def fit(self, penalty=None, active=None, initial=None, tol=1e-6, repeat_update=1, refit=False, debug=False):
         """
         Fit a pathwise coordinate optimization model with initial estimates
         and a guess at the active set.
@@ -172,13 +172,13 @@ class CoordWise(object):
                 else:
                     if initial is None:
                         print "\t---> Initial pass through all coefficients..."
-                        self.active = self.update( np.array(range(self.data[0].shape[1])) )
+                        self.active = self.update( np.array(range(self.problem.X.shape[1])) )
                         print "\t---> Done with initial pass."
                     else:
                         print "\t---> Setting active set to last solution in path."
                         self.active = initial
             else:
-#                print "\t---> Path index", i
+                print "\t---> Path index", i
                 if self.KKT_checking_ON:
                     self.eligible = self._get_eligible_set(penalties[i-1], penalties[i]['l1'], self.screen_type, self.problem.penalty)
                     self.active = self.eligible.copy()
@@ -231,7 +231,7 @@ class CoordWise(object):
                                 print "No KKT violations on full variable set."
                 elif finished and not self.KKT_checking_ON:
                        self.current_active = self.active.copy()
-                       self.active = np.array( range(self.data[0].shape[1]) )
+                       self.active = np.array( range(self.problem.X.shape[1]) )
                        self.active = self.update(self.active)
                        if len( np.setdiff1d(self.current_active, self.active) ) > 0:
                            print "Added ", np.setdiff1d(self.current_active, self.active), " to active set."
@@ -257,8 +257,8 @@ class CoordWise(object):
 
     def check_KKT(self, KKT_type="all", conv_eps=0.1):
         if KKT_type == "all":
-            eligible = np.setdiff1d( np.array(range( self.data[0].shape[1] )), self.active)
-#            eligible = [i for i in np.array(range( self.data[0].shape[1] )) if i not in self.active]
+            eligible = np.setdiff1d( np.array(range( self.problem.X.shape[1] )), self.active)
+#            eligible = [i for i in np.array(range( self.problem.X.shape[1] )) if i not in self.active]
             print "KKT type: all"
         elif KKT_type == "eligible":
             eligible = np.setdiff1d( self.eligible, self.active)
@@ -267,9 +267,9 @@ class CoordWise(object):
         if len(eligible) > 0:
             # check KKT on eligible set
             beta_hat, r = self.current
-            n = self.data[0].shape[0]
-            p = self.data[0].shape[1]
-            X = self.data[0][:,eligible]
+            n = self.problem.X.shape[0]
+            p = self.problem.X.shape[1]
+            X = self.problem.X[:,eligible]
             y = self.data[1]
             G = [self.data[2][i] for i in eligible]
             l1 = self.problem.penalty['l1']; l2 = self.problem.penalty['l2']; l3 = self.problem.penalty['l3']
@@ -290,7 +290,7 @@ class CoordWise(object):
         by finding the minimum value such that 0 is in the subdifferential
         and the coefficients are all zero.
         """
-        subgrads = np.fabs( inner1d(self.data[0].T, self.data[1]) )
+        subgrads = np.fabs( inner1d(self.problem.X.T, self.data[1]) )
         return np.max( subgrads )
 
     # ---- Methods for getting results and coefficients ---- #
@@ -308,11 +308,11 @@ class CoordWise(object):
         if type == "STRONG":
            if lam_max == None or lam == None:
               raise ValueError("Lambda parameters not given.")
-           eligible = self.strategy.STRONG(lam_max,lam,resids,self.data[0]) 
+           eligible = self.strategy.STRONG(lam_max,lam,resids,self.problem.X) 
         elif type == "SAFE":
            if lam_max == None or lam == None:
               raise ValueError("Lambda parameters not given.")
-           eligible = self.strategy.SAFE(lam_max,lam,resids,self.data[0])
+           eligible = self.strategy.SAFE(lam_max,lam,resids,self.problem.X)
         elif type == "all":
            eligible = self.strategy.all()
         else:

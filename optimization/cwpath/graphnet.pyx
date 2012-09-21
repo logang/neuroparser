@@ -331,12 +331,15 @@ class RobustGraphNet(Regression):
 
     def set_coefficients(self, coefs):
         if coefs is not None:
-            self.beta[range(self.X.shape[1]-self.X.shape[0])] = coefs
+            self.beta = coefs #[range(self.X.shape[1]-self.X.shape[0])] = coefs
+#            self.beta[range(self.X.shape[1]-self.X.shape[0])] = coefs
             self.r = self.Y - np.dot(self.X,self.beta)
 
     def get_coefficients(self):
         #Remove extra coefficients from infimal convolution
-        return self.beta[range(self.X.shape[1]-self.X.shape[0])].copy()
+#        print self.beta[range(self.X.shape[1]-self.X.shape[0],self.X.shape[1])].copy()
+        return self.beta.copy() # [range(self.X.shape[1]-self.X.shape[0])].copy()
+#        return self.beta[range(self.X.shape[1]-self.X.shape[0])].copy()
     
     coefficients = property(get_coefficients, set_coefficients)	
 
@@ -355,7 +358,7 @@ class RobustGraphNet(Regression):
         """
         if permute:
             active = np.random.permutation(active)
-        #print active.shape
+        print active.shape
         return _update_robust_graphnet(active,
                              self.penalty,
                              nonzero,
@@ -1107,8 +1110,6 @@ cdef DTYPE_float_t _solve_plinmax_svm(DTYPE_float_t a,
     else:
         return 0
 
-
-
 """
 
     if b > 0:
@@ -1163,13 +1164,10 @@ def _update_robust_graphnet(np.ndarray[DTYPE_int_t, ndim=1] active,
     n = X.shape[0]
     p = X.shape[1]
 
-    
-
     for j in range(q):
         i = active[j]
         S = beta[i] * Xssq[i]
         S += np.dot(X[:,i],r)
-
         
         if i < p-n:
             l1wt = l1
