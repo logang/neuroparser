@@ -1,4 +1,11 @@
+#!/usr/bin/env python
+# encoding: utf-8
+# filename: cwpath.pyx
+# cython: profile=True
+
 """
+------------------------------------------------------------------------------------------------------------------------------
+
 This optimization module implements large scale 'Pathwise coordinate optimization'
 techniques for graph-constrained sparse linear models using active set methods, warm starts, 
 SAFE/STRONG rules for variable screening, and infimal convolution, as described in 
@@ -10,7 +17,7 @@ Friedman J., Hastie, T., Hofling, H., and Tibshirani, R. Pathwise coordinate opt
 [Rockafeller]
 [our paper]
 
---------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
 
 The optimization problems solved by the CoordWise class are determined 
 by the following callables:
@@ -29,7 +36,9 @@ CoordWise.output(*problem_args):
 CoordWise.copy(*problem_args): 
   return a copy of output(*problem_args) to compare to a new solution.
 
+------------------------------------------------------------------------------------------------------------------------------
 """
+
 import numpy as np
 cimport numpy as np
 import time, copy
@@ -43,6 +52,8 @@ ctypedef np.int_t DTYPE_int_t
 
 # should we replace this with cython?
 from numpy.core.umath_tests import inner1d
+
+# ----------------------------------------------------------------------------------------------------------------------------
 
 class CoordWise(object):
     """
@@ -100,13 +111,18 @@ class CoordWise(object):
         Fit a pathwise coordinate optimization model with initial estimates
         and a guess at the active set.
 
-        It applies an optional initial strategy, if supplied.
+        It applies an optional initial strategy, if supplied (see strategy.py).
         """
         if debug:
-            print "B", self.problem.coefficients, np.std(self.problem.coefficients), np.max(self.problem.coefficients)
+            print "Coefficients descriptive statistics:"
+            print "\t--> Standard deviation:", np.std(self.problem.coefficients)
+            print "\t--> Range: [",np.min(self.problem.coefficients),np.max(self.problem.coefficients)," ]"
+            print "\t--> Mean:", np.mean(self.problem.coefficients) 
+            print "\t--> Median:", np.median(self.problem.coefficients) 
+            print "\t--> Mode:", np.mode(self.problem.coefficients) 
 
 	# keep copy of penalty around
-        penalty = self.problem.penalty #.copy()
+        # penalty = self.problem.penalty.copy()
 
         if penalty is not None:
             self.problem.penalty = penalty
@@ -122,7 +138,8 @@ class CoordWise(object):
         else:
             penalties = self.problem.penalty
 
-	# initialize conv 
+	# initialize conv, the worst difference ratio between 
+	# sequential estimates of nonzero coefficients  
         self.conv = 10.    
 	
 	# declare path length
@@ -135,9 +152,11 @@ class CoordWise(object):
         # (1) Set penalties
         # (2) Run "repeat_update" updates of active set
         # (3) Check for convergence of active set. 
-        # (4) If active set converged, check coordinate-wise for violations of KKT conditions in the eligible set.
+        # (4) If KKT_checking_ON is True:
+        #     If active set converged, check coordinate-wise for violations of KKT conditions in the eligible set.
         #     Add any violations to active set and repeat (2)-(3) until KKT conditions are not violated.
-        # (5) Check coordinate-wise for violations of KKT conditions in the entire set of variables. 
+        # (5) If KKT_checking_ON is True:
+        #     Check coordinate-wise for violations of KKT conditions in the entire set of variables. 
         #     If KKT conditions satisfied, proceed to next fit in path. 
         #     Otherwise, add violations to active set and repeat (2)-(4).
 
@@ -365,3 +384,5 @@ class CoordWise(object):
     def append(self, value):
         self.results.append(value)
         
+# ----------------------------------------------------------------------------------------------------------------------------
+# EOF

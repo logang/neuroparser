@@ -1,11 +1,11 @@
 # cython functions are not yet seen as packages. import path. 
-import sys, os
+import sys, os, time
 path_to_cython_packages = os.path.abspath('../.')
 sys.path.append(path_to_cython_packages)
 
-# scons still building packges funny, get path to smoothers
-path_to_smoothers = os.path.abspath('../../smoothers/.')
-sys.path.append(path_to_smoothers)
+# scons still building packges funny, get path to graphs
+path_to_graphs = os.path.abspath('../../graphs/.')
+sys.path.append(path_to_graphs)
 
 # import major libraries
 import numpy as np
@@ -27,6 +27,7 @@ from graph_laplacian import construct_adjacency_list
 # functions
 from numpy.core.umath_tests import inner1d
 from multiprocessing import Pool
+import pp
 
 # setup some R stuff
 def setup():
@@ -35,7 +36,7 @@ def setup():
 #------------------------------------------------------------------------------------------------------#
 # Run all GraphNet tests
 
-def train_all(num_l1_steps=100,test_imap=False):
+def train_all(num_l1_steps=100,test_imap=False,test_pp=True):
     # get training data and constants
     Data = np.load("Data.npz")
     X = Data['X'][0:1000,:]
@@ -50,7 +51,7 @@ def train_all(num_l1_steps=100,test_imap=False):
     # # test grid
     l2vec = [0.0, 1e6]
     l3vec = [1e6, 1e12] # [0.0, 100, 1e6]
-    deltavec = [-999.0, 0.1, 0.2, 0.3, 0.5, 1.0, 1e10] #, 0.1, 0.5, 1., 1e10]
+    deltavec = [-999.0, 0.1] #, 0.2, 0.3, 0.5, 1.0, 1e10] #, 0.1, 0.5, 1., 1e10]
     svmdeltavec = [-999.0] #, 1]
 
     # big grid
@@ -82,25 +83,34 @@ def train_all(num_l1_steps=100,test_imap=False):
         pl.imsave('imtest.png',coefs.reshape((60,60),order='F'))
         #1/0
 
-    # run problems in parallel with imap
-    pool = Pool()
-    results = pool.imap( _graphnet_imap, problems )
+        # run problems in parallel with imap
+        pool = Pool()
+        results = pool.imap( _graphnet_imap, problems )
 
-    # write results to h5 file
-    outfile = h5py.File("Grid_output.h5",'w')
-    for r in results:
-        if r[0] not in outfile.keys():
-            outfile.create_group(r[0]) # group by problem type
-        if str(r[1]) not in outfile[r[0]].keys():
-            outfile[r[0]].create_group(str(r[1])) # group by penalty tuple
-        outfile[r[0]][str(r[1])]['params'] = np.array(r[1])
-        outfile[r[0]][str(r[1])]['l1vec'] = np.array(r[2])
-        outfile[r[0]][str(r[1])]['coefficients'] = np.array(r[3][0])
-        outfile[r[0]][str(r[1])]['residuals'] = np.array(r[3][1])
-        print "Mean and median residuals:", np.mean(r[3][1]), np.median(r[3][1])
-    # TODO: save parameter grid to hdf5 file
-    outfile.close()
-    
+        # write results to h5 file
+        outfile = h5py.File("Grid_output.h5",'w')
+        for r in results:
+            if r[0] not in outfile.keys():
+                outfile.create_group(r[0]) # group by problem type
+            if str(r[1]) not in outfile[r[0]].keys():
+                outfile[r[0]].create_group(str(r[1])) # group by penalty tuple
+            outfile[r[0]][str(r[1])]['params'] = np.array(r[1])
+            outfile[r[0]][str(r[1])]['l1vec'] = np.array(r[2])
+            outfile[r[0]][str(r[1])]['coefficients'] = np.array(r[3][0])
+            outfile[r[0]][str(r[1])]['residuals'] = np.array(r[3][1])
+            print "Mean and median residuals:", np.mean(r[3][1]), np.median(r[3][1])
+        # TODO: save parameter grid to hdf5 file
+        outfile.close()
+
+    if test_pp:
+        import pp
+        job_server = pp.Server()
+        jobs = [(in_tuple, job_server.submit(_graphnet_pp,in_tuple, (test_graphnet, get_lambda_max,construct_adjacency_list), ("numpy as np","time","graphnet","cwpath"))) for in_tuple in problems]
+        print "Running jobs!"
+
+    for job in jobs:
+        print job[1]()
+
     print "\n\n Congratulations - nothing exploded!"
 
 def validate_all(h5file):
@@ -177,8 +187,27 @@ def _graphnet_imap( in_tuple ):
     cwpathtol = 1e-6
 
     results, problemkey = test_graphnet(X,Y,G,l1vec,l2,l3,delta,svmdelta,initial=None,tol=cwpathtol,scipy_compare=False)
-
     return (problemkey, pen, l1vec, results)
+
+#------------------------------------------------------------------------------------------------------#
+# Wrapper for running GraphNet problems using parallel python
+
+def _graphnet_pp( X,Y,G,pen,num_l1,lam_max,problemkey ):
+    """
+    Run a graphnet model for a particular tuple (X,Y,G,(l2,l3,delta,svmdelta),num_l1,lam_max)
+    for a grid of l1 parameters.
+    """
+    G = G[0]
+    l2 = pen[0]
+    l3 = pen[1]
+    delta = pen[2]
+    svmdelta = pen[3]
+    l1vec = np.linspace(0.95*lam_max, 0.2*lam_max, num=num_l1)
+    cwpathtol = 1e-6
+
+    return problemkey, test_graphnet(X,Y,G,l1vec,l2,l3,delta,svmdelta,initial=None,tol=cwpathtol,scipy_compare=False)
+#    return results, problemkey #= test_graphnet(X,Y,G,l1vec,l2,l3,delta,svmdelta,initial=None,tol=cwpathtol,scipy_compare=False)
+#    return (problemkey, pen, l1vec, results)
 
 #------------------------------------------------------------------------------------------------------#
 # Main Graphnet problem testing function
