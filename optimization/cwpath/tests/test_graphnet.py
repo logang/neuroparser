@@ -11,7 +11,8 @@ sys.path.append(path_to_graphs)
 import numpy as np
 import scipy.optimize
 from nose.tools import *
-import time, h5py
+import time
+#import h5py
 
 # for plotting 
 import matplotlib
@@ -20,7 +21,7 @@ import pylab as pl
 pl.ion()
 
 # local imports
-import testR
+# import testR
 import cwpath, graphnet, strategy
 from graph_laplacian import construct_adjacency_list
 

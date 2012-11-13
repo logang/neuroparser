@@ -73,7 +73,7 @@ class CoordWise(object):
 	-- debug: a flag specifying whether debugging information should be printed to screen. Defaults to False.
     """
 
-    def __init__(self, data, problemtype, strategy=None, penalty=None, initial_coefs=None, debug=False):
+    def __init__(self, data, problemtype, strategy=None, penalty=None, initial_coefs=None, debug=True):
         self.data = data
         self.problem = problemtype(data,initial_coefs)
         self.strategy = strategy or self.problem.default_strategy()
