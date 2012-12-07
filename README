@@ -33,9 +33,13 @@ Note that the more standard setup.py install is not currently recommended.
 # Usage
 #---------------------
 
-Some basic examples of how the code can be called are in
+Some basic examples of how the code can be called are in:
+
+/neuroparser/examples/graphnet_example.py
+
+and some more use cases can be found in:
 
 /neuroparser/optimization/cwpath/tests/profile.py
 /neuroparser/optimization/cwpath/tests/test_graphnet.py
 
-Please report bugs to logang@stanford.edu.
+Please report bugs or feature requests to logang@stanford.edu or on the GitHub site. --L.G. Dec 2012.
