@@ -21,3 +21,11 @@ Loading files:
 Coefficient View:
   -- integrate real-time viewing of coefficients with sliders
   -- can we use real-time Chaco code easily within PyQt4, or should it be rewritten?
+
+# -------------- DOCS -------------- #
+
+Improve README:
+  -- thorough install instructions cross-platform
+  -- dependencies and their install instructions
+ 
+Better example code!
