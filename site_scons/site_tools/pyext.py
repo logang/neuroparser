@@ -31,6 +31,8 @@ AUTHORS:
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+# modified 3/1/2013 by L. Grosenick.
+
 __revision__ = "__FILE__ __REVISION__ __DATE__ __DEVELOPER__"
 
 import sys
@@ -192,13 +194,20 @@ def set_configuration(env, use_distutils):
     # want to change this, even if not using distutils
     ifnotset(env, 'PYEXTINCPATH', sysconfig.get_python_inc())
 
-    if use_distutils:
-        for k, (v, should_split) in dist_cfg.items():
-            val = eval(v)
-            if should_split:
-                val = val.split()
-            ifnotset(env, k, val)
-    else:
+    try:
+        if use_distutils:
+            for k, (v, should_split) in dist_cfg.items():
+                val = eval(v)
+                try:
+                    if should_split:
+                        val = val.split()
+                except:
+                    print "Value ", val, "could not be split."
+                ifnotset(env, k, val)
+        else:
+            _set_configuration_nodistutils(env)
+    except:
+        print "Error while trying to use Distutils! Continuing without using Distutils."
         _set_configuration_nodistutils(env)
 
 def generate(env):
