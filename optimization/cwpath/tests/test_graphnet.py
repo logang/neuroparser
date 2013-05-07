@@ -268,8 +268,10 @@ def test_graphnet(X,Y,G=None,l1=500.,l2=-999.0,l3=-999.0,delta=-999.0,svmdelta=-
     print "\t---> Fitting GraphNet problem with coordinate descent took:", time.clock()-tic, "seconds."
 
     if adaptive:
+        betas = coefficients
         tic = time.clock()
-        l1weights = 1./beta
+        eps = 1e-5
+        l1weights = 1./(beta + eps)
         l = cwpath.CoordWise((X, Y, A), problemtype, initial_coefs = initial)
         l.problem.assign_penalty(l1=l1,l2=l2,l3=l3,delta=delta,l1weights=l1weights,newl1=l1)
         adaptive_coefficients, adaptive_residuals = l.fit(tol=tol, initial=initial) 

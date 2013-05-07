@@ -19,9 +19,9 @@ def read(fname):
 
 #ext_modules = [Extension("optimization.cwpath.lasso", ["./optimization/cwpath/lasso.pyx"],include_dirs=[numpy.get_include()])]
 ext_modules = [Extension("optimization.cwpath.graphnet", ["./optimization/cwpath/graphnet.pyx"],include_dirs=[numpy.get_include()])]
-ext_modules = [Extension("cwpath.graphnet", ["./optimization/cwpath/graphnet.pyx"],include_dirs=[numpy.get_include()])]
-ext_modules = [Extension("optimization.cwpath.regression", ["./optimization/cwpath/regression.pyx"],include_dirs=[numpy.get_include()])]
-ext_modules = [Extension("optimization.cwpath.cwpath", ["./optimization/cwpath/cwpath.pyx"],include_dirs=[numpy.get_include()])]
+ext_modules += [Extension("cwpath.graphnet", ["./optimization/cwpath/graphnet.pyx"],include_dirs=[numpy.get_include()])]
+ext_modules += [Extension("optimization.cwpath.regression", ["./optimization/cwpath/regression.pyx"],include_dirs=[numpy.get_include()])]
+ext_modules += [Extension("optimization.cwpath.cwpath", ["./optimization/cwpath/cwpath.pyx"],include_dirs=[numpy.get_include()])]
 
 setup(
     name = "Neuroparser",
