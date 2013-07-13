@@ -43,10 +43,10 @@ and some more use cases can be found in:
 /neuroparser/optimization/cwpath/tests/profile.py
 /neuroparser/optimization/cwpath/tests/test_graphnet.py
 
-Please report bugs or feature requests to logang@stanford.edu or on the GitHub site. --L.G. Jul 2013.
+Please report bugs or feature requests to logang@stanford.edu or better using GitHub.
 
-Logan Grosenick
-Kiefer Katovich
-Brad Klingenberg
-Jonathan Taylor 
+Logan Grosenick  
+Kiefer Katovich  
+Brad Klingenberg  
+Jonathan Taylor  
 
