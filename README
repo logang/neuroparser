@@ -1,37 +1,38 @@
-#---------------------
-# Installation
-#---------------------
+Neuroparser
+===========
 
-First make sure that you have Scons installed (http://www.scons.org/), and installed the following dependencies:
+Setup.py Installation
+---------------------
+The usual 
 
-cython
-numpy
-scipy
-matplotlib
-h5py
-multiprocessing
+    python setup.py install
 
-Then type "scons" in the neuroparser directory to build the code. Note that for the moment you will first have to install the following dependencies:
+should do the trick if you have the dependencies installed.
 
-#---------------------
-# Warning
-#---------------------
+SCONS Installation
+------------------
 
-This code is currently in an early state of development for public use, and will undergo many changes in the coming months. Use it at your own risk! It will likely be good to download the latest code with some frequency and rebuild by typing 
+If you have scons installed, simply type
 
-scons -c 
+    scons
+
+in the top directory (neuroparser). 
+
+Warning!
+--------
+
+This code is currently in an early state of development for public use, and will undergo many changes in the coming months. Use it at your own risk! It will likely be good to download the latest code with some frequency and rebuild by for example using 
+
+    scons -c 
 
 to clear away old files, and then
 
-scons
+    scons
 
 to rebuild them.
 
-Note that the more standard setup.py install is not currently recommended.
-
-#---------------------
-# Usage
-#---------------------
+Usage
+-----
 
 Some basic examples of how the code can be called are in:
 
@@ -42,4 +43,10 @@ and some more use cases can be found in:
 /neuroparser/optimization/cwpath/tests/profile.py
 /neuroparser/optimization/cwpath/tests/test_graphnet.py
 
-Please report bugs or feature requests to logang@stanford.edu or on the GitHub site. --L.G. Dec 2012.
+Please report bugs or feature requests to logang@stanford.edu or on the GitHub site. --L.G. Jul 2013.
+
+Logan Grosenick
+Kiefer Katovich
+Brad Klingenberg
+Jonathan Taylor 
+
